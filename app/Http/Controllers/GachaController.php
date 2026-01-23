@@ -18,7 +18,13 @@ class GachaController extends Controller
     public function pull(Request $request)
     {
         $user = $request->user();
-        $amount = (int) $request->input('pullAmount', 1); // 1 หรือ 10
+        // --- [ANTI-CHEAT: VALIDATION] ---
+        // ตรวจสอบว่า pullAmount ต้องเป็น 1 หรือ 10 เท่านั้น ป้องกันค่าติดลบหรือค่าแปลกๆ
+        $amount = (int) $request->input('pullAmount');
+        if (!in_array($amount, [1, 10])) {
+            return response()->json(['success' => false, 'message' => 'Invalid pull amount'], 400);
+        }
+
         $targetId = (int) $request->input('target_character_id');
 
         // 1. Load Data (Load JSON และ Gems)
