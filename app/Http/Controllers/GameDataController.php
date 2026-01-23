@@ -20,17 +20,20 @@ class GameDataController extends Controller
     }
 
     public function load(Request $request)
-    {
-        $save = GameSave::where('user_id', $request->user()->id)->first();
+{
+    $save = GameSave::where('user_id', $request->user()->id)->first();
 
-        if (!$save || empty($save->save_data)) {
-            return response()->json([]); // ส่ง empty ให้ Unity ไปสร้าง New Game
-        }
-
-        // SaveLoadManager.cs บรรทัด 122: คาดหวัง Object หรือ Wrapper
-        // เราส่ง Wrapper ไปเพื่อให้ตรงกับ Code Client
-        return response()->json([
-            'data' => $save->save_data
-        ]);
+    // 1. ตรวจสอบว่ามีข้อมูลใน Database หรือไม่
+    if (!$save || empty($save->save_data)) {
+        // ส่ง response เป็น null (หรือ HTTP 204 No Content)
+        // เพื่อให้ Unity (SaveLoadManager.cs) เข้าเงื่อนไข onComplete?.Invoke(null);
+        return response(null, 200); // 200 OK with null body is generally safe
     }
+
+    // 2. ถ้ามีข้อมูล
+    // เรายังคงต้องส่งในรูปแบบ Wrapper ที่ Unity คาดหวัง
+    return response()->json([
+        'data' => $save->save_data
+    ]);
+}
 }

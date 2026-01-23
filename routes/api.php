@@ -10,7 +10,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // Password Reset (Custom for Unity)
-Route::post('/password/email', [AuthController::class, 'sendResetCode']);
+Route::post('/password/email', [AuthController::class, 'sendResetEmail']);
 Route::post('/password/verify', [AuthController::class, 'verifyResetCode']);
 Route::post('/password/reset', [AuthController::class, 'resetPassword']);
 

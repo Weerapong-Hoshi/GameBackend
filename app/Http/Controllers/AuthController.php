@@ -5,23 +5,47 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\GameSave;
 use Illuminate\Http\Request;
+use Carbon\Carbon; 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use App\Mail\ResetPasswordMail;
 
 class AuthController extends Controller
 {
+    // =======================================================
+    // 1. REGISTER
+    // =======================================================
     public function register(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6'
-        ]);
+        try {
+            // 1. Validation และบังคับใช้ @gmail.com
+            $request->validate([
+                'email' => [
+                    'required',
+                    'email',
+                    'unique:users',
+                    'regex:/@gmail\.com$/i'
+                ],
+                'password' => 'required|min:6'
+            ], [
+                'email.regex' => 'Email ต้องลงท้ายด้วย @gmail.com',
+                'email.unique' => 'พบบัญชีซ้ำในระบบ',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => $e->errors()[array_key_first($e->errors())][0]
+            ], 422);
+        }
 
         $user = User::create([
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'name' => 'Player',
+            'name' => 'Unknown', // Default Name
         ]);
 
         // สร้าง Save เปล่าเตรียมไว้
@@ -32,14 +56,24 @@ class AuthController extends Controller
         return response()->json(['token' => $token, 'message' => 'Register Successful']);
     }
 
+    // =======================================================
+    // 2. LOGIN
+    // =======================================================
     public function login(Request $request)
     {
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        // 1. เช็คว่ามี User ในระบบหรือไม่
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json(['message' => 'ไม่พบบัญชีนี้'], 404);
         }
 
-        $user = User::where('email', $request->email)->first();
-        $user->tokens()->delete(); // ลบ Token เก่า (Optional)
+        // 2. ถ้ามี User ค่อยลอง Login
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json(['message' => 'รหัสผ่านไม่ถูกต้อง'], 401);
+        }
+
+        // 3. Login สำเร็จ
+        $user->tokens()->delete();
         $token = $user->createToken('unity-game')->plainTextToken;
 
         return response()->json(['token' => $token, 'message' => 'Login Successful']);
@@ -52,52 +86,75 @@ class AuthController extends Controller
 
     // --- Password Reset Logic (Simplified for Unity) ---
 
-    public function sendResetCode(Request $request)
+    public function sendResetEmail(Request $request)
     {
-        $user = User::where('email', $request->email)->first();
-        if (!$user)
-            return response()->json(['message' => 'email_not_found'], 404);
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
 
+        $user = User::where('email', $request->email)->first();
+
+        // สร้างรหัส 6 หลัก
         $code = rand(100000, 999999);
-        // ในระบบจริงควรเก็บใน Table password_reset_tokens
-        DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $request->email],
-            ['token' => $code, 'created_at' => now()]
+
+        DB::table('password_reset_codes')->updateOrInsert(
+            ['email' => $user->email],
+            [
+                'code' => $code,
+                'created_at' => Carbon::now()
+            ]
         );
 
-        // TODO: Send Email Here (Mail::to($user)->send(...));
-        // เพื่อการทดสอบ ให้ Return Code กลับไปเลย (Production ห้ามทำ)
-        return response()->json(['message' => 'Code sent', 'debug_code' => $code]);
+        Mail::to($user->email)->send(new ResetPasswordMail($code));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Code sent'
+        ], 200);
     }
 
     public function verifyResetCode(Request $request)
     {
-        $record = DB::table('password_reset_tokens')
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required'
+        ]);
+
+        $record = DB::table('password_reset_codes')
             ->where('email', $request->email)
-            ->where('token', $request->code)
+            ->where('code', $request->code)
             ->first();
 
-        if ($record)
-            return response()->json(['message' => 'Code Valid']);
-        return response()->json(['message' => 'Invalid Code'], 400);
+        if (!$record) {
+            return response()->json(['message' => 'Invalid code'], 400);
+        }
+
+        return response()->json(['message' => 'Code verified'], 200);
     }
 
     public function resetPassword(Request $request)
     {
-        $record = DB::table('password_reset_tokens')
-            ->where('email', $request->email)
-            ->where('token', $request->code)
-            ->first();
-
-        if (!$record)
-            return response()->json(['message' => 'Invalid Request'], 400);
-
-        User::where('email', $request->email)->update([
-            'password' => Hash::make($request->password)
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required',
+            'password' => 'required|min:6'
         ]);
 
-        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+        $record = DB::table('password_reset_codes')
+            ->where('email', $request->email)
+            ->where('code', $request->code)
+            ->first();
 
-        return response()->json(['message' => 'Password Changed']);
+        if (!$record) {
+            return response()->json(['message' => 'Invalid code'], 400);
+        }
+
+        $user = User::where('email', $request->email)->first();
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        DB::table('password_reset_codes')->where('email', $request->email)->delete();
+
+        return response()->json(['message' => 'Password reset successful'], 200);
     }
 }
