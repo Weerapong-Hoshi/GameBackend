@@ -8,18 +8,17 @@ use App\Models\Character;
 
 class GachaController extends Controller
 {
-    // Config Rates - ปรับอัตราดรอปใหม่ให้เหมาะสมกับการไม่มีหลุดเรท 
-    const RATE_SSR = 3;  // 3% (รวม Standard SSR และ Featured SSR)
-    const RATE_SR = 17;  // 17%
-    const RATE_R = 80;   // 80%
+    // Config Rates
+    const RATE_SSR = 3;
+    const RATE_SR = 17;
+    const RATE_R = 80;
     const GEM_COST = 10;
-    const PITY_COUNT = 40; // การันตีที่ 40
+    const PITY_COUNT = 40;
 
     public function pull(Request $request)
     {
         $user = $request->user();
-        // --- [ANTI-CHEAT: VALIDATION] ---
-        // ตรวจสอบว่า pullAmount ต้องเป็น 1 หรือ 10 เท่านั้น ป้องกันค่าติดลบหรือค่าแปลกๆ
+
         $amount = (int) $request->input('pullAmount');
         if (!in_array($amount, [1, 10])) {
             return response()->json(['success' => false, 'message' => 'Invalid pull amount'], 400);
@@ -27,9 +26,10 @@ class GachaController extends Controller
 
         $targetId = (int) $request->input('target_character_id');
 
-        // 1. Load Data (Load JSON และ Gems)
+        // 1. Load Data
+        // ✅ ใช้ ->data ตาม Database จริง
         $gameSave = GameSave::firstOrCreate(['user_id' => $user->id]);
-        $saveData = json_decode($gameSave->save_data, true);
+        $saveData = json_decode($gameSave->data, true);
 
         if (!$saveData) {
             return response()->json(['success' => false, 'message' => 'No save data found'], 400);
@@ -43,22 +43,16 @@ class GachaController extends Controller
         }
 
         // 2. Prepare Pools
-        // ดึงตัวละคร Standard R, SR ทั้งหมด
         $rPool = Character::where('pool_type', 'Standard')->where('rarity', 'R')->get();
         $srPool = Character::where('pool_type', 'Standard')->where('rarity', 'SR')->get();
 
-        // ดึงตัว Target (Featured)
         $targetChar = Character::where('id', $targetId)->first();
         if (!$targetChar || $targetChar->pool_type !== 'Featured') {
-            return response()->json(['success' => false, 'message' => 'Invalid or Non-Featured Target Selected'], 400);
+            return response()->json(['success' => false, 'message' => 'Invalid Target'], 400);
         }
 
-        // ดึง Standard SSRs ทั้งหมด (ที่ไม่ใช่ Limited)
         $standardSsrPool = Character::where('pool_type', 'Standard')->where('rarity', 'SSR')->get();
-
-        // รวม Pool SSR ทั้งหมดที่สุ่มได้ (Featured + Standard SSR)
         $fullSsrPool = $standardSsrPool->push($targetChar);
-        // *หมายเหตุ: หาก Featured มีหลายตัว ต้องใช้ logic การคำนวณ rateMultiplier ตรงนี้ด้วย*
 
         $pullResults = [];
         $currentPity = $gameSave->pity_count;
@@ -69,50 +63,36 @@ class GachaController extends Controller
             $obtainedChar = null;
             $rarityRoll = null;
 
-            // --- PITY CHECK (Hard Pity at 40) ---
             if ($currentPity >= self::PITY_COUNT) {
-                // การันตี 100% ได้ Target
                 $obtainedChar = $targetChar;
-                $rarityRoll = 'SSR'; // กำหนด Rarity ให้เป็น SSR
-                $currentPity = 0; // **Reset Pity เมื่อถึงการันตี**
+                $rarityRoll = 'SSR';
+                $currentPity = 0;
             } else {
-                // --- NORMAL ROLL ---
                 $rand = rand(1, 100);
 
                 if ($rand <= self::RATE_SSR) {
-                    // ออก SSR (3%)
                     $rarityRoll = 'SSR';
-                    // **[LOGIC 1: ไม่มีหลุดเรท]** สุ่มจาก Pool SSR ที่กำหนดไว้ (Featured + Standard)
-                    // ใช้การสุ่มแบบถ่วงน้ำหนัก (Weighted Random) เพื่อให้ตัว Featured ออกง่ายขึ้น
-                    // แต่ในตัวอย่างนี้ใช้แบบ Random ธรรมดาจาก Pool รวมก่อน
                     $obtainedChar = $fullSsrPool->random();
-
-                    // ***[IMPORTANT]*** หากได้ Target ก่อนการันตี Pity จะไม่รีเซ็ต
-                    // if ($obtainedChar->id === $targetChar->id) { $currentPity ไม่ถูก reset; } 
-
+                    if ($obtainedChar->id === $targetChar->id) {
+                        $currentPity = 0;
+                    }
                 } elseif ($rand <= self::RATE_SSR + self::RATE_SR) {
-                    // ออก SR (17%)
                     $rarityRoll = 'SR';
                     $obtainedChar = $srPool->random();
                 } else {
-                    // ออก R (80%)
                     $rarityRoll = 'R';
                     $obtainedChar = $rPool->random();
                 }
             }
 
-            // 4. Fallback (ป้องกัน Error ถ้า Pool ว่าง)
-            if (!$obtainedChar) {
-                // ในกรณีที่ Pool ว่าง (ไม่ควรเกิดขึ้น) ให้ได้ Target Char ไปเลย
+            if (!$obtainedChar)
                 $obtainedChar = $targetChar;
-            }
 
-            // 5. Process Character (New/Duplicate & Fallback Logic)
+            // Process Ownership
             $ownedChars = $saveData['playerData']['ownedCharacters'] ?? [];
             $isNew = !array_key_exists($obtainedChar->id, $ownedChars);
 
             if ($isNew) {
-                // Add Character to SaveData (Minimal structure)
                 $saveData['playerData']['ownedCharacters'][$obtainedChar->id] = [
                     'characterId' => $obtainedChar->id,
                     'level' => 1,
@@ -120,42 +100,56 @@ class GachaController extends Controller
                     'currentEvolutionStep' => 1,
                 ];
                 $saveData['playerData']['encounteredCharacterIds'][] = $obtainedChar->id;
-
-                // ***[LOGIC 2: Pity ไม่รีเซ็ตเมื่อได้ Target]***
-                // หากได้ Target (Featured) ก่อนการันตี 40 Pity จะยังคงนับต่อไป
-                // เนื่องจากเราไม่ได้ทำการ reset $currentPity ใน step 3. เราไม่ต้องทำอะไรเพิ่มตรงนี้
-
             } else {
-                // Duplicate: Add Fallback Material
                 $matId = $obtainedChar->fallback_material_id;
-                $amount = $obtainedChar->fallback_amount;
+                $fallbackAmount = $obtainedChar->fallback_amount;
 
-                if ($matId) { // Check if fallback material exists
+                if ($matId) {
+                    if (!isset($saveData['playerData']['ownedMaterials']) || empty($saveData['playerData']['ownedMaterials'])) {
+                        $saveData['playerData']['ownedMaterials'] = [];
+                    }
                     if (!isset($saveData['playerData']['ownedMaterials'][$matId])) {
                         $saveData['playerData']['ownedMaterials'][$matId] = 0;
                     }
-                    $saveData['playerData']['ownedMaterials'][$matId] += $amount;
+                    $saveData['playerData']['ownedMaterials'][$matId] += $fallbackAmount;
                 }
             }
 
             $pullResults[] = [
                 'id' => $obtainedChar->id,
                 'isCharacter' => true,
-                'rarity' => $rarityRoll ?? $obtainedChar->rarity, // ใช้ Rarity ที่ Roll ได้
+                'rarity' => $rarityRoll ?? $obtainedChar->rarity,
                 'is_new' => $isNew,
                 'fallback_id' => $obtainedChar->fallback_material_id,
                 'fallback_amount' => $obtainedChar->fallback_amount
             ];
         }
 
-        // 6. Deduct Gems & Update Save
+        // ตัดเพชร
         $saveData['playerData']['gems'] -= $totalCost;
 
-        $gameSave->save_data = json_encode($saveData);
-        $gameSave->pity_count = $currentPity; // Save Pity ที่ Server
+        // Update Pity
+        $gameSave->pity_count = $currentPity;
+
+        // แก้ไข Dictionary ว่างก่อน Save (Material)
+        if (
+            !isset($saveData['playerData']['ownedMaterials']) ||
+            (is_array($saveData['playerData']['ownedMaterials']) && empty($saveData['playerData']['ownedMaterials']))
+        ) {
+            $saveData['playerData']['ownedMaterials'] = new \stdClass();
+        }
+
+        // แก้ไข Dictionary ว่างก่อน Save (Characters)
+        if (
+            !isset($saveData['playerData']['ownedCharacters']) ||
+            (is_array($saveData['playerData']['ownedCharacters']) && empty($saveData['playerData']['ownedCharacters']))
+        ) {
+            $saveData['playerData']['ownedCharacters'] = new \stdClass();
+        }
+
+        $gameSave->data = json_encode($saveData, JSON_UNESCAPED_UNICODE);
         $gameSave->save();
 
-        // 7. Return Response
         return response()->json([
             'success' => true,
             'results' => $pullResults,

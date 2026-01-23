@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\GameSave;
 use Illuminate\Http\Request;
-use Carbon\Carbon; 
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +23,6 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            // 1. Validation และบังคับใช้ @gmail.com
             $request->validate([
                 'email' => [
                     'required',
@@ -45,11 +44,42 @@ class AuthController extends Controller
         $user = User::create([
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'name' => 'Unknown', // Default Name
+            'name' => 'Player',
         ]);
 
-        // สร้าง Save เปล่าเตรียมไว้
-        GameSave::create(['user_id' => $user->id]);
+        // ⭐ กำหนดค่าเริ่มต้น (Single Source of Truth เริ่มต้นที่นี่)
+        $defaultSaveData = [
+            'allPresets' => [],
+            'progressData' => ['progressEntries' => []],
+            'playerData' => [
+                'playerName' => 'นักผจญภัย',
+                'coins' => 5000, // ค่าเริ่มต้นอยู่ที่นี่
+                'gems' => 100,   // ค่าเริ่มต้นอยู่ที่นี่
+                'playerRank' => 1,
+                'currentExp' => 0,
+                'expToNextRank' => 100,
+                'maxTeamCost' => 50,
+
+                'currentEnergy' => 240,
+                'lastEnergyUpdateTime' => now()->timestamp,
+
+                'gachaPityCounters' => new \stdClass(),
+                'usedRedeemCodes' => [],
+                'dailyShopPurchases' => new \stdClass(),
+                'lastShopResetDate' => now()->format('Y-m-d'),
+
+                'ownedCharacters' => new \stdClass(),
+                'ownedMaterials' => new \stdClass(),
+                'encounteredCharacterIds' => [],
+            ],
+            'questData' => ['questProgress' => new \stdClass()]
+        ];
+
+        GameSave::create([
+            'user_id' => $user->id,
+            'data' => json_encode($defaultSaveData, JSON_UNESCAPED_UNICODE),
+            'pity_count' => 0
+        ]);
 
         $token = $user->createToken('unity-game')->plainTextToken;
 
@@ -156,5 +186,34 @@ class AuthController extends Controller
         DB::table('password_reset_codes')->where('email', $request->email)->delete();
 
         return response()->json(['message' => 'Password reset successful'], 200);
+    }
+
+    private function createDefaultSave($user)
+    {
+        $defaultSaveData = [
+            'playerData' => [
+                'playerName' => 'New Player',
+                'playerRank' => 1,
+                'coins' => 0,
+                'gems' => 0,
+                'ownedCharacters' => new \stdClass(),
+                'ownedMaterials' => new \stdClass(),
+                'encounteredCharacterIds' => [],
+                'usedRedeemCodes' => []
+            ],
+            'questData' => [
+                'questProgress' => new \stdClass()
+            ],
+            'progressData' => [
+                'progressEntries' => []
+            ],
+            'allPresets' => []
+        ];
+
+        GameSave::create([
+            'user_id' => $user->id,
+            'data' => json_encode($defaultSaveData, JSON_UNESCAPED_UNICODE),
+            'pity_count' => 0
+        ]);
     }
 }

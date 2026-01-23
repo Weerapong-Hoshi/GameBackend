@@ -46,4 +46,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function gameSave()
+    {
+        return $this->hasOne(\App\Models\GameSave::class, 'user_id');
+    }
 }
