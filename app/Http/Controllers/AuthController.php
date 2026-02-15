@@ -111,7 +111,15 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'avatar' => $user->avatar,
+            'has_google_linked' => !empty($user->google_id),
+            'created_at' => $user->created_at,
+        ]);
     }
 
     // --- Password Reset Logic (Simplified for Unity) ---
