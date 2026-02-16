@@ -81,7 +81,8 @@ class AuthController extends Controller
             'pity_count' => 0
         ]);
 
-        $token = $user->createToken('unity-game')->plainTextToken;
+        // สร้าง token ที่มีอายุ 30 วัน
+        $token = $user->createToken('unity-game', ['*'], now()->addDays(30))->plainTextToken;
 
         return response()->json(['token' => $token, 'message' => 'Register Successful']);
     }
@@ -104,7 +105,8 @@ class AuthController extends Controller
 
         // 3. Login สำเร็จ
         $user->tokens()->delete();
-        $token = $user->createToken('unity-game')->plainTextToken;
+        // สร้าง token ที่มีอายุ 30 วัน
+        $token = $user->createToken('unity-game', ['*'], now()->addDays(30))->plainTextToken;
 
         return response()->json(['token' => $token, 'message' => 'Login Successful']);
     }
@@ -132,6 +134,19 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
+        // ตรวจสอบว่ามี request ล่าสุดภายใน 5 นาทีหรือไม่
+        $recentRequest = DB::table('password_reset_codes')
+            ->where('email', $user->email)
+            ->where('created_at', '>=', Carbon::now()->subMinutes(5))
+            ->first();
+
+        if ($recentRequest) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Please wait 5 minutes before requesting another reset code'
+            ], 429);
+        }
+
         // สร้างรหัส 6 หลัก
         $code = rand(100000, 999999);
 
@@ -139,11 +154,14 @@ class AuthController extends Controller
             ['email' => $user->email],
             [
                 'code' => $code,
-                'created_at' => Carbon::now()
+                'created_at' => Carbon::now(),
+                'expires_at' => Carbon::now()->addMinutes(30) // รหัสหมดอายุใน 30 นาที
             ]
         );
 
         Mail::to($user->email)->send(new ResetPasswordMail($code));
+
+        \Log::info('Password reset code sent', ['email' => $user->email]);
 
         return response()->json([
             'status' => 'success',
@@ -165,6 +183,12 @@ class AuthController extends Controller
 
         if (!$record) {
             return response()->json(['message' => 'Invalid code'], 400);
+        }
+
+        // ตรวจสอบว่ารหัสหมดอายุหรือไม่
+        if (Carbon::parse($record->expires_at)->isPast()) {
+            DB::table('password_reset_codes')->where('email', $request->email)->delete();
+            return response()->json(['message' => 'Reset code has expired'], 400);
         }
 
         return response()->json(['message' => 'Code verified'], 200);

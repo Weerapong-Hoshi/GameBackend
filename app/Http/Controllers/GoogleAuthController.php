@@ -56,11 +56,11 @@ class GoogleAuthController extends Controller
     public function verifyToken(Request $request): JsonResponse
     {
         $request->validate([
-            'id_token' => 'required|string',
+            'access_token' => 'required|string',
         ]);
 
         try {
-            $accessToken = $request->id_token; // จริงๆ คือ Access Token จาก JavaScript
+            $accessToken = $request->access_token; // Google Access Token จาก Unity WebGL
 
             \Log::info('Received Google Access Token', ['token_length' => strlen($accessToken)]);
 
@@ -85,11 +85,20 @@ class GoogleAuthController extends Controller
             $email = $googleUser['email'] ?? null;
             $name = $googleUser['name'] ?? 'Player';
             $avatar = $googleUser['picture'] ?? 'https://lh3.googleusercontent.com/a/default-user';
+            $emailVerified = $googleUser['email_verified'] ?? false;
 
             if (!$googleId || !$email) {
                 return response()->json([
                     'message' => 'Invalid Google User Data'
                 ], 400);
+            }
+
+            // ตรวจสอบว่า email ถูก verify โดย Google หรือไม่
+            if (!$emailVerified) {
+                \Log::warning('Google email not verified', ['email' => $email]);
+                return response()->json([
+                    'message' => 'Please verify your Google email before signing in'
+                ], 422);
             }
 
             // เช็ค @gmail.com
@@ -130,7 +139,8 @@ class GoogleAuthController extends Controller
 
             // ลบ Token เก่า สร้างใหม่
             $user->tokens()->delete();
-            $token = $user->createToken('unity-game')->plainTextToken;
+            // สร้าง token ที่มีอายุ 30 วัน
+            $token = $user->createToken('unity-game', ['*'], now()->addDays(30))->plainTextToken;
 
             return response()->json([
                 'token' => $token,
