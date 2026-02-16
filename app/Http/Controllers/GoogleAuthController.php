@@ -7,6 +7,7 @@ use App\Models\GameSave;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Google\Client as GoogleClient;
 
@@ -22,7 +23,7 @@ class GoogleAuthController extends Controller
         $clientId = config('services.google.client_id');
         $redirectUri = config('services.google.redirect');
         $scope = urlencode('openid email profile');
-        
+
         $redirectUrl = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
@@ -57,78 +58,80 @@ class GoogleAuthController extends Controller
         $request->validate([
             'id_token' => 'required|string',
         ]);
-        
+
         try {
-            $idToken = $request->id_token;
-            
-            // Initialize Google Client
-            $client = new GoogleClient(['client_id' => config('services.google.client_id')]);
-            
-            // Verify the ID token
-            $payload = $client->verifyIdToken($idToken);
-            
-            if (!$payload) {
+            $accessToken = $request->id_token; // จริงๆ คือ Access Token จาก JavaScript
+
+            \Log::info('Received Google Access Token', ['token_length' => strlen($accessToken)]);
+
+            // ✅ ใช้ HTTP Client ดึงข้อมูล User จาก Google
+            $response = Http::get('https://www.googleapis.com/oauth2/v3/userinfo', [
+                'access_token' => $accessToken
+            ]);
+
+            if (!$response->successful()) {
+                \Log::error('Google API Error', ['response' => $response->body()]);
                 return response()->json([
-                    'message' => 'Invalid Google Token - Verification failed'
+                    'message' => 'Invalid Google Token'
                 ], 401);
             }
-            
-            // Extract user information from the payload
-            $googleId = $payload['sub']; // Google's unique ID for the user
-            $email = $payload['email'];
-            $name = $payload['name'] ?? 'Player';
-            $avatar = $payload['picture'] ?? 'https://lh3.googleusercontent.com/a/default-user';
-            
-            // Validate email (must be @gmail.com for your system)
+
+            $googleUser = $response->json();
+
+            \Log::info('Google User Info', $googleUser);
+
+            // ดึงข้อมูล
+            $googleId = $googleUser['sub'] ?? null;
+            $email = $googleUser['email'] ?? null;
+            $name = $googleUser['name'] ?? 'Player';
+            $avatar = $googleUser['picture'] ?? 'https://lh3.googleusercontent.com/a/default-user';
+
+            if (!$googleId || !$email) {
+                return response()->json([
+                    'message' => 'Invalid Google User Data'
+                ], 400);
+            }
+
+            // เช็ค @gmail.com
             if (!preg_match('/@gmail\.com$/i', $email)) {
                 return response()->json([
                     'message' => 'Email ต้องลงท้ายด้วย @gmail.com'
                 ], 422);
             }
-            
-            // Find user by google_id
+
+            // หา User หรือสร้างใหม่
             $user = User::where('google_id', $googleId)->first();
-            
+
             if (!$user) {
-                // Try to find by email (existing user with same email)
                 $user = User::where('email', $email)->first();
-                
+
                 if ($user) {
-                    // Link Google account to existing user
+                    // Link Google กับ User เดิม
                     $user->google_id = $googleId;
                     $user->avatar = $avatar;
                     $user->save();
-                    
-                    \Log::info('Google account linked to existing user', [
-                        'user_id' => $user->id,
-                        'email' => $email,
-                        'google_id' => $googleId
-                    ]);
+
+                    \Log::info('Linked Google to existing user', ['user_id' => $user->id]);
                 } else {
-                    // Create new user
+                    // สร้าง User ใหม่
                     $user = User::create([
                         'name' => $name,
                         'email' => $email,
                         'google_id' => $googleId,
                         'avatar' => $avatar,
-                        'password' => null, // No password for Google users
+                        'password' => null,
                     ]);
-                    
-                    // Create default game save for new user
+
                     $this->createDefaultGameSave($user);
-                    
-                    \Log::info('New user created via Google Sign-In', [
-                        'user_id' => $user->id,
-                        'email' => $email,
-                        'google_id' => $googleId
-                    ]);
+
+                    \Log::info('Created new user via Google', ['user_id' => $user->id]);
                 }
             }
-            
-            // Delete existing tokens and create new one
+
+            // ลบ Token เก่า สร้างใหม่
             $user->tokens()->delete();
             $token = $user->createToken('unity-game')->plainTextToken;
-            
+
             return response()->json([
                 'token' => $token,
                 'user' => [
@@ -136,17 +139,16 @@ class GoogleAuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'avatar' => $user->avatar,
-                    'has_google_linked' => !empty($user->google_id),
                 ],
                 'message' => 'Google Sign-In Successful'
             ]);
-            
+
         } catch (\Exception $e) {
-            \Log::error('Google Sign-In failed', [
+            \Log::error('Google Sign-In Exception', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'message' => 'Google Sign-In Failed',
                 'error' => $e->getMessage()
@@ -162,35 +164,35 @@ class GoogleAuthController extends Controller
         $request->validate([
             'id_token' => 'required|string',
         ]);
-        
+
         $user = $request->user();
-        
+
         if ($user->google_id) {
             return response()->json([
                 'message' => 'Google account already linked'
             ], 400);
         }
-        
+
         try {
             $idToken = $request->id_token;
-            
+
             // Initialize Google Client
             $client = new GoogleClient(['client_id' => config('services.google.client_id')]);
-            
+
             // Verify the ID token
             $payload = $client->verifyIdToken($idToken);
-            
+
             if (!$payload) {
                 return response()->json([
                     'message' => 'Invalid Google Token - Verification failed'
                 ], 401);
             }
-            
+
             // Extract user information from the payload
             $googleId = $payload['sub'];
             $email = $payload['email'];
             $avatar = $payload['picture'] ?? 'https://lh3.googleusercontent.com/a/default-user';
-            
+
             // Check if this Google account is already linked to another user
             $existingGoogleUser = User::where('google_id', $googleId)->first();
             if ($existingGoogleUser) {
@@ -198,32 +200,32 @@ class GoogleAuthController extends Controller
                     'message' => 'This Google account is already linked to another user'
                 ], 400);
             }
-            
+
             // Check if the email from Google matches the current user's email
             if ($user->email !== $email) {
                 return response()->json([
                     'message' => 'Google account email does not match your account email'
                 ], 400);
             }
-            
+
             // Validate email format (must be @gmail.com for your system)
             if (!preg_match('/@gmail\.com$/i', $email)) {
                 return response()->json([
                     'message' => 'Email ต้องลงท้ายด้วย @gmail.com'
                 ], 422);
             }
-            
+
             // Link the Google account
             $user->google_id = $googleId;
             $user->avatar = $avatar;
             $user->save();
-            
+
             \Log::info('Google account linked to user', [
                 'user_id' => $user->id,
                 'email' => $email,
                 'google_id' => $googleId
             ]);
-            
+
             return response()->json([
                 'message' => 'Google account linked successfully',
                 'user' => [
@@ -234,14 +236,14 @@ class GoogleAuthController extends Controller
                     'has_google_linked' => true,
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             \Log::error('Failed to link Google account', [
                 'user_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'message' => 'Failed to link Google account',
                 'error' => $e->getMessage()
@@ -255,24 +257,24 @@ class GoogleAuthController extends Controller
     public function unlinkAccount(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         if (!$user->google_id) {
             return response()->json([
                 'message' => 'No Google account linked'
             ], 400);
         }
-        
+
         // Check if user has password (to prevent lockout)
         if (empty($user->password)) {
             return response()->json([
                 'message' => 'Cannot unlink Google account. Please set a password first.'
             ], 400);
         }
-        
+
         $user->google_id = null;
         $user->avatar = null;
         $user->save();
-        
+
         return response()->json([
             'message' => 'Google account unlinked successfully',
             'user' => [
@@ -291,7 +293,7 @@ class GoogleAuthController extends Controller
     public function checkLinked(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         return response()->json([
             'has_google_linked' => !empty($user->google_id),
             'avatar' => $user->avatar,
