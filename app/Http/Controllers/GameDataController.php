@@ -87,6 +87,7 @@ class GameDataController extends Controller
                     'maxTeamCost' => (int) ($playerData['maxTeamCost'] ?? 50),
                     'currentEnergy' => (int) ($playerData['currentEnergy'] ?? 240),
                     'lastEnergyUpdateTime' => $playerData['lastEnergyUpdateTime'] ?? now()->timestamp,
+                    'isTutorialCompleted' => (bool) ($playerData['isTutorialCompleted'] ?? false),
 
                     'ownedCharacters' => $this->asObject($playerData['ownedCharacters'] ?? null),
                     'ownedMaterials' => $this->asObject($playerData['ownedMaterials'] ?? null),
