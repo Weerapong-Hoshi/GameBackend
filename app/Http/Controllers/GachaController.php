@@ -10,8 +10,9 @@ class GachaController extends Controller
 {
     // Config Rates
     const RATE_SSR = 3;
-    const RATE_SR = 17;
-    const RATE_R = 80;
+    const RATE_SR = 12;
+    const RATE_R = 35;
+    const RATE_N = 50;
     const GEM_COST = 10;
     const PITY_COUNT = 40;
 
@@ -43,6 +44,7 @@ class GachaController extends Controller
         }
 
         // 2. Prepare Pools
+        $nPool = Character::where('pool_type', 'Standard')->where('rarity', 'N')->get();
         $rPool = Character::where('pool_type', 'Standard')->where('rarity', 'R')->get();
         $srPool = Character::where('pool_type', 'Standard')->where('rarity', 'SR')->get();
 
@@ -79,9 +81,12 @@ class GachaController extends Controller
                 } elseif ($rand <= self::RATE_SSR + self::RATE_SR) {
                     $rarityRoll = 'SR';
                     $obtainedChar = $srPool->random();
-                } else {
+                } elseif ($rand <= self::RATE_SSR + self::RATE_SR + self::RATE_R) {
                     $rarityRoll = 'R';
                     $obtainedChar = $rPool->random();
+                } else {
+                    $rarityRoll = 'N';
+                    $obtainedChar = $nPool->random();
                 }
             }
 

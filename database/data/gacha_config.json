@@ -1,5 +1,5 @@
 {
-    "exportDate": "2026-01-23 04:59:57",
+    "exportDate": "2026-03-11 01:07:59",
     "totalCharacters": 62,
     "characters": [
         {
@@ -8,8 +8,8 @@
             "rarity": "N",
             "poolType": "Standard",
             "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "fallbackMaterialId": 101,
+            "fallbackAmount": 1
         },
         {
             "id": 102,
@@ -17,8 +17,8 @@
             "rarity": "N",
             "poolType": "Standard",
             "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "fallbackMaterialId": 102,
+            "fallbackAmount": 1
         },
         {
             "id": 103,
@@ -26,8 +26,8 @@
             "rarity": "N",
             "poolType": "Standard",
             "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "fallbackMaterialId": 103,
+            "fallbackAmount": 1
         },
         {
             "id": 104,
@@ -35,8 +35,8 @@
             "rarity": "N",
             "poolType": "Standard",
             "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "fallbackMaterialId": 104,
+            "fallbackAmount": 1
         },
         {
             "id": 105,
@@ -44,8 +44,8 @@
             "rarity": "N",
             "poolType": "Standard",
             "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "fallbackMaterialId": 105,
+            "fallbackAmount": 1
         },
         {
             "id": 106,
@@ -53,8 +53,8 @@
             "rarity": "N",
             "poolType": "Standard",
             "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "fallbackMaterialId": 106,
+            "fallbackAmount": 1
         },
         {
             "id": 107,
@@ -62,8 +62,8 @@
             "rarity": "N",
             "poolType": "Standard",
             "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "fallbackMaterialId": 107,
+            "fallbackAmount": 1
         },
         {
             "id": 108,
@@ -71,17 +71,17 @@
             "rarity": "N",
             "poolType": "Standard",
             "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "fallbackMaterialId": 108,
+            "fallbackAmount": 1
         },
         {
             "id": 109,
             "characterName": "เศษศิลาทราย",
             "rarity": "N",
             "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "rateMultiplier": 1.0,
+            "fallbackMaterialId": 109,
+            "fallbackAmount": 1
         },
         {
             "id": 110,
@@ -89,8 +89,8 @@
             "rarity": "N",
             "poolType": "Standard",
             "rateMultiplier": 2.0,
-            "fallbackMaterialId": 1300,
-            "fallbackAmount": 5000
+            "fallbackMaterialId": 110,
+            "fallbackAmount": 1
         },
         {
             "id": 201,
@@ -283,7 +283,7 @@
         },
         {
             "id": 309,
-            "characterName": " ท้าวเวสสุวรรณจิ๋ว",
+            "characterName": "ท้าวเวสสุวรรณจิ๋ว",
             "rarity": "SR",
             "poolType": "Standard",
             "rateMultiplier": 2.0,

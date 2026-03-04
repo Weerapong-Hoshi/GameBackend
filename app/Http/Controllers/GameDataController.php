@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\GameSave;
 
 class GameDataController extends Controller
 {
@@ -32,12 +33,44 @@ class GameDataController extends Controller
             $user = $request->user();
             $save = $user->gameSave;
 
+            // ✅ ตรวจสอบและสร้าง Save Data สำรองหากไม่มี
             if (!$save || !$save->data) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Save data not found',
-                    'data' => null
-                ], 404);
+                \Log::warning("User {$user->id} ({$user->email}) has no save data. Creating default save with starting resources.");
+                
+                // สร้าง Save Data เริ่มต้น (เหมือนตอน Register)
+                $defaultSaveData = [
+                    'allPresets' => [],
+                    'progressData' => ['progressEntries' => []],
+                    'playerData' => [
+                        'playerName' => 'นักผจญภัย',
+                        'coins' => 5000, // เงินเริ่มต้น
+                        'gems' => 100,   // เพชรเริ่มต้น
+                        'playerRank' => 1,
+                        'currentExp' => 0,
+                        'expToNextRank' => 100,
+                        'maxTeamCost' => 50,
+                        'currentEnergy' => 240,
+                        'lastEnergyUpdateTime' => now()->timestamp,
+                        'isTutorialCompleted' => false,
+                        'ownedCharacters' => new \stdClass(),
+                        'ownedMaterials' => new \stdClass(),
+                        'encounteredCharacterIds' => [],
+                        'usedRedeemCodes' => [],
+                        'gachaPityCounters' => new \stdClass(),
+                        'dailyShopPurchases' => new \stdClass(),
+                        'lastShopResetDate' => now()->format('Y-m-d'),
+                    ],
+                    'questData' => ['questProgress' => new \stdClass()]
+                ];
+
+                // สร้าง GameSave ใหม่
+                $save = GameSave::create([
+                    'user_id' => $user->id,
+                    'data' => json_encode($defaultSaveData, JSON_UNESCAPED_UNICODE),
+                    'pity_count' => 0
+                ]);
+
+                \Log::info("Created default save for user {$user->id} with starting resources: 5000 coins, 100 gems.");
             }
 
             // ✅ เพิ่ม try-catch สำหรับ JSON decode
