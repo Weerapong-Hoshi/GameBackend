@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\DB;
 use Google\Client as GoogleClient;
 
@@ -16,36 +17,73 @@ class GoogleAuthController extends Controller
     /**
      * Redirect to Google OAuth (for web browser redirect flow)
      */
-    public function redirect(): JsonResponse
+    // 1. ส่งผู้ใช้ไปหน้าเลือกอีเมลของ Google
+    public function redirect()
     {
-        // For WebGL, we'll use a different approach (ID token verification)
-        // This endpoint might not be needed for WebGL, but kept for completeness
-        $clientId = config('services.google.client_id');
-        $redirectUri = config('services.google.redirect');
-        $scope = urlencode('openid email profile');
-
-        $redirectUrl = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
-            'client_id' => $clientId,
-            'redirect_uri' => $redirectUri,
+        $url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
+            'client_id' => env('GOOGLE_CLIENT_ID'),
+            'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
             'response_type' => 'code',
-            'scope' => $scope,
+            'scope' => 'openid email profile',
             'access_type' => 'online',
             'prompt' => 'select_account',
         ]);
-
-        return response()->json(['redirect_url' => $redirectUrl]);
+        return redirect($url);
     }
 
-    /**
-     * Handle Google OAuth callback (for web browser redirect flow)
-     */
-    public function callback(Request $request): JsonResponse
+
+    // 2. รับ Code จาก Google, สร้าง User, ออก Token และส่งเข้าเกม
+    public function callback(Request $request)
     {
-        // This callback is for web browser flow, not WebGL
-        // For WebGL, use verifyToken endpoint instead
-        return response()->json([
-            'message' => 'Please use the verify-token endpoint for Unity WebGL'
-        ], 400);
+        $code = $request->query('code');
+        if (!$code)
+            return response()->json(['error' => 'No code provided'], 400);
+
+        try {
+            // แลก Code เป็น Access Token
+            $tokenResponse = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+                'code' => $code,
+                'client_id' => env('GOOGLE_CLIENT_ID'),
+                'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+                'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
+                'grant_type' => 'authorization_code',
+            ]);
+            $accessToken = $tokenResponse->json()['access_token'];
+
+            // ดึงข้อมูล User จาก Google
+            $userResponse = Http::get('https://www.googleapis.com/oauth2/v3/userinfo', [
+                'access_token' => $accessToken
+            ]);
+            $googleUser = $userResponse->json();
+
+            // ค้นหาหรือสร้าง User ใหม่ (ใช้ Logic เดิมของคุณ)
+            $user = User::where('google_id', $googleUser['sub'])->first()
+                ?: User::where('email', $googleUser['email'])->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name' => $googleUser['name'] ?? 'Player',
+                    'email' => $googleUser['email'],
+                    'google_id' => $googleUser['sub'],
+                    'avatar' => $googleUser['picture'] ?? null,
+                    'password' => null,
+                ]);
+                $this->createDefaultGameSave($user); // ฟังก์ชันเดิมของคุณ
+            } else {
+                $user->google_id = $googleUser['sub'];
+                $user->save();
+            }
+
+            // ออก Token ใหม่
+            $user->tokens()->delete();
+            $token = $user->createToken('unity-game', ['*'], now()->addDays(30))->plainTextToken;
+
+            // 🚀 ท่าไม้ตาย: ส่งกลับเข้าเกมผ่าน Deep Link
+            return redirect("mygame://auth?token=" . $token);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Login failed: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
