@@ -52,6 +52,7 @@ class GameDataController extends Controller
                         'currentEnergy' => 240,
                         'lastEnergyUpdateTime' => now()->timestamp,
                         'isTutorialCompleted' => false,
+                        'tutorialPhaseIndex'  => 0,
                         'ownedCharacters' => new \stdClass(),
                         'ownedMaterials' => new \stdClass(),
                         'encounteredCharacterIds' => [],
@@ -121,6 +122,7 @@ class GameDataController extends Controller
                     'currentEnergy' => (int) ($playerData['currentEnergy'] ?? 240),
                     'lastEnergyUpdateTime' => $playerData['lastEnergyUpdateTime'] ?? now()->timestamp,
                     'isTutorialCompleted' => (bool) ($playerData['isTutorialCompleted'] ?? false),
+                    'tutorialPhaseIndex'  => (int)  ($playerData['tutorialPhaseIndex']  ?? 0),
 
                     'ownedCharacters' => $this->asObject($playerData['ownedCharacters'] ?? null),
                     'ownedMaterials' => $this->asObject($playerData['ownedMaterials'] ?? null),
