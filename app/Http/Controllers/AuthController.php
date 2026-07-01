@@ -47,39 +47,8 @@ class AuthController extends Controller
             'name' => 'Player',
         ]);
 
-        // ⭐ กำหนดค่าเริ่มต้น (Single Source of Truth เริ่มต้นที่นี่)
-        $defaultSaveData = [
-            'allPresets' => [],
-            'progressData' => ['progressEntries' => []],
-            'playerData' => [
-                'playerName' => 'นักผจญภัย',
-                'coins' => 5000, // ค่าเริ่มต้นอยู่ที่นี่
-                'gems' => 100,   // ค่าเริ่มต้นอยู่ที่นี่
-                'playerRank' => 1,
-                'currentExp' => 0,
-                'expToNextRank' => 100,
-                'maxTeamCost' => 50,
-
-                'currentEnergy' => 240,
-                'lastEnergyUpdateTime' => now()->timestamp,
-
-                'gachaPityCounters' => new \stdClass(),
-                'usedRedeemCodes' => [],
-                'dailyShopPurchases' => new \stdClass(),
-                'lastShopResetDate' => now()->format('Y-m-d'),
-
-                'ownedCharacters' => new \stdClass(),
-                'ownedMaterials' => new \stdClass(),
-                'encounteredCharacterIds' => [],
-            ],
-            'questData' => ['questProgress' => new \stdClass()]
-        ];
-
-        GameSave::create([
-            'user_id' => $user->id,
-            'data' => json_encode($defaultSaveData, JSON_UNESCAPED_UNICODE),
-            'pity_count' => 0
-        ]);
+        // ⭐ กำหนดค่าเริ่มต้น (ใช้ Single Source of Truth จาก GameSave model)
+        GameSave::createDefaultForUser($user);
 
         // สร้าง token ที่มีอายุ 30 วัน
         $token = $user->createToken('unity-game', ['*'], now()->addDays(30))->plainTextToken;
@@ -220,32 +189,4 @@ class AuthController extends Controller
         return response()->json(['message' => 'Password reset successful'], 200);
     }
 
-    private function createDefaultSave($user)
-    {
-        $defaultSaveData = [
-            'playerData' => [
-                'playerName' => 'New Player',
-                'playerRank' => 1,
-                'coins' => 0,
-                'gems' => 0,
-                'ownedCharacters' => new \stdClass(),
-                'ownedMaterials' => new \stdClass(),
-                'encounteredCharacterIds' => [],
-                'usedRedeemCodes' => []
-            ],
-            'questData' => [
-                'questProgress' => new \stdClass()
-            ],
-            'progressData' => [
-                'progressEntries' => []
-            ],
-            'allPresets' => []
-        ];
-
-        GameSave::create([
-            'user_id' => $user->id,
-            'data' => json_encode($defaultSaveData, JSON_UNESCAPED_UNICODE),
-            'pity_count' => 0
-        ]);
-    }
 }

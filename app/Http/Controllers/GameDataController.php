@@ -37,39 +37,8 @@ class GameDataController extends Controller
             if (!$save || !$save->data) {
                 \Log::warning("User {$user->id} ({$user->email}) has no save data. Creating default save with starting resources.");
                 
-                // สร้าง Save Data เริ่มต้น (เหมือนตอน Register)
-                $defaultSaveData = [
-                    'allPresets' => [],
-                    'progressData' => ['progressEntries' => []],
-                    'playerData' => [
-                        'playerName' => 'นักผจญภัย',
-                        'coins' => 5000, // เงินเริ่มต้น
-                        'gems' => 100,   // เพชรเริ่มต้น
-                        'playerRank' => 1,
-                        'currentExp' => 0,
-                        'expToNextRank' => 100,
-                        'maxTeamCost' => 50,
-                        'currentEnergy' => 240,
-                        'lastEnergyUpdateTime' => now()->timestamp,
-                        'isTutorialCompleted' => false,
-                        'tutorialPhaseIndex'  => 0,
-                        'ownedCharacters' => new \stdClass(),
-                        'ownedMaterials' => new \stdClass(),
-                        'encounteredCharacterIds' => [],
-                        'usedRedeemCodes' => [],
-                        'gachaPityCounters' => new \stdClass(),
-                        'dailyShopPurchases' => new \stdClass(),
-                        'lastShopResetDate' => now()->format('Y-m-d'),
-                    ],
-                    'questData' => ['questProgress' => new \stdClass()]
-                ];
-
-                // สร้าง GameSave ใหม่
-                $save = GameSave::create([
-                    'user_id' => $user->id,
-                    'data' => json_encode($defaultSaveData, JSON_UNESCAPED_UNICODE),
-                    'pity_count' => 0
-                ]);
+                // สร้าง Save Data เริ่มต้น (ใช้ Single Source of Truth จาก GameSave model)
+                $save = GameSave::createDefaultForUser($user);
 
                 \Log::info("Created default save for user {$user->id} with starting resources: 5000 coins, 100 gems.");
             }
@@ -114,8 +83,8 @@ class GameDataController extends Controller
                 'playerData' => [
                     'playerName' => $playerData['playerName'] ?? 'Unknown',
                     'playerRank' => (int) ($playerData['playerRank'] ?? 1),
-                    'coins' => (int) ($playerData['coins'] ?? 0),
-                    'gems' => (int) ($playerData['gems'] ?? 0),
+                    'coins' => (int) ($playerData['coins'] ?? 5000),
+                    'gems' => (int) ($playerData['gems'] ?? 100),
                     'currentExp' => (int) ($playerData['currentExp'] ?? 0),
                     'expToNextRank' => (int) ($playerData['expToNextRank'] ?? 100),
                     'maxTeamCost' => (int) ($playerData['maxTeamCost'] ?? 50),

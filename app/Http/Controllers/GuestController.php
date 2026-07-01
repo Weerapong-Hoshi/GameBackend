@@ -33,36 +33,8 @@ class GuestController extends Controller
                     'is_guest' => true,
                 ]);
 
-                // Create default game save data (same as AuthController::register)
-                $defaultSaveData = [
-                    'allPresets' => [],
-                    'progressData' => ['progressEntries' => []],
-                    'playerData' => [
-                        'playerName' => 'นักผจญภัย',
-                        'coins' => 5000,
-                        'gems' => 100,
-                        'playerRank' => 1,
-                        'currentExp' => 0,
-                        'expToNextRank' => 100,
-                        'maxTeamCost' => 50,
-                        'currentEnergy' => 240,
-                        'lastEnergyUpdateTime' => now()->timestamp,
-                        'gachaPityCounters' => new \stdClass(),
-                        'usedRedeemCodes' => [],
-                        'dailyShopPurchases' => new \stdClass(),
-                        'lastShopResetDate' => now()->format('Y-m-d'),
-                        'ownedCharacters' => new \stdClass(),
-                        'ownedMaterials' => new \stdClass(),
-                        'encounteredCharacterIds' => [],
-                    ],
-                    'questData' => ['questProgress' => new \stdClass()]
-                ];
-
-                GameSave::create([
-                    'user_id' => $user->id,
-                    'data' => json_encode($defaultSaveData, JSON_UNESCAPED_UNICODE),
-                    'pity_count' => 0
-                ]);
+                // Create default game save data (ใช้ Single Source of Truth จาก GameSave model)
+                GameSave::createDefaultForUser($user);
 
                 return $user;
             });

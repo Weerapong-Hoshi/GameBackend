@@ -16,18 +16,29 @@ class GoogleAuthController extends Controller
 {
     /**
      * Redirect to Google OAuth (for web browser redirect flow)
+     * 
+     * รองรับ guest_token สำหรับผูกบัญชี Guest กับ Google
+     * Unity เปิด URL: /auth/google/redirect?guest_token=xxx
      */
     // 1. ส่งผู้ใช้ไปหน้าเลือกอีเมลของ Google
-    public function redirect()
+    public function redirect(Request $request)
     {
-        $url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
+        $params = [
             'client_id' => env('GOOGLE_CLIENT_ID'),
             'redirect_uri' => env('GOOGLE_REDIRECT_URI'),
             'response_type' => 'code',
             'scope' => 'openid email profile',
             'access_type' => 'online',
             'prompt' => 'select_account',
-        ]);
+        ];
+
+        // ✅ ถ้ามี guest_token ให้ส่งผ่าน state เพื่อให้ Google ส่งกลับมาให้ callback
+        $guestToken = $request->query('guest_token');
+        if ($guestToken) {
+            $params['state'] = 'guest_token=' . $guestToken;
+        }
+
+        $url = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query($params);
         return redirect($url);
     }
 
@@ -36,6 +47,7 @@ class GoogleAuthController extends Controller
     public function callback(Request $request)
     {
         $code = $request->query('code');
+        $state = $request->query('state'); // อ่าน state ที่ Google ส่งกลับมา
         if (!$code)
             return response()->json(['error' => 'No code provided'], 400);
 
@@ -56,33 +68,123 @@ class GoogleAuthController extends Controller
             ]);
             $googleUser = $userResponse->json();
 
-            // ค้นหาหรือสร้าง User ใหม่ (ใช้ Logic เดิมของคุณ)
-            $user = User::where('google_id', $googleUser['sub'])->first()
-                ?: User::where('email', $googleUser['email'])->first();
+            // ✅ ตรวจสอบ state ว่ามี guest_token หรือไม่ (โหมดผูกบัญชี Guest)
+            $guestToken = null;
+            if ($state && str_starts_with($state, 'guest_token=')) {
+                $guestToken = substr($state, strlen('guest_token='));
+            }
+
+            if ($guestToken) {
+                // 🔗 โหมดผูกบัญชี: ค้นหา Guest User จาก token
+                $hashedToken = hash('sha256', $guestToken);
+                $accessTokenRecord = \Laravel\Sanctum\PersonalAccessToken::where('token', $hashedToken)->first();
+
+                if (!$accessTokenRecord) {
+                    \Log::warning('Guest link failed: token not found', ['guest_token_hash' => $hashedToken]);
+                    return redirect("mygame://auth?error=guest_not_found");
+                }
+
+                $guestUser = $accessTokenRecord->tokenable; // User model
+
+                if (!$guestUser || !$guestUser->is_guest) {
+                    \Log::warning('Guest link failed: user not found or not guest', ['user_id' => $guestUser?->id]);
+                    return redirect("mygame://auth?error=guest_not_found");
+                }
+
+                // ตรวจสอบว่า Google นี้ถูกผูกกับ User อื่นแล้วหรือยัง
+                $existingUser = User::where('google_id', $googleUser['sub'])->first();
+                if ($existingUser && $existingUser->id !== $guestUser->id) {
+                    \Log::warning('Guest link failed: Google already linked to another user', [
+                        'google_id' => $googleUser['sub'],
+                        'existing_user_id' => $existingUser->id
+                    ]);
+                    return redirect("mygame://auth?error=google_already_linked");
+                }
+
+                // ตรวจสอบว่า email นี้ถูกใช้โดย User อื่นแล้วหรือยัง
+                $existingEmailUser = User::where('email', $googleUser['email'])->first();
+                if ($existingEmailUser && $existingEmailUser->id !== $guestUser->id) {
+                    \Log::warning('Guest link failed: email already used by another user', [
+                        'email' => $googleUser['email'],
+                        'existing_user_id' => $existingEmailUser->id
+                    ]);
+                    return redirect("mygame://auth?error=email_already_used");
+                }
+
+                // ✅ อัปเกรด Guest → ถาวร
+                $guestUser->email = $googleUser['email'];
+                $guestUser->google_id = $googleUser['sub'];
+                $guestUser->avatar = $googleUser['picture'] ?? null;
+                $guestUser->is_guest = false;
+                $guestUser->save();
+
+                \Log::info('Guest account upgraded via Google link', [
+                    'user_id' => $guestUser->id,
+                    'email' => $googleUser['email'],
+                    'google_id' => $googleUser['sub']
+                ]);
+
+                // ออก Token ใหม่ (ลบ Token เก่าทิ้ง)
+                $guestUser->tokens()->delete();
+                $newToken = $guestUser->createToken('unity-game', ['*'], now()->addDays(30))->plainTextToken;
+
+                return redirect("mygame://auth?token=" . $newToken);
+            }
+
+            // 🔵 โหมดปกติ (Login/Register)
+            $user = User::where('google_id', $googleUser['sub'])->first();
 
             if (!$user) {
-                $user = User::create([
-                    'name' => $googleUser['name'] ?? 'Player',
-                    'email' => $googleUser['email'],
-                    'google_id' => $googleUser['sub'],
-                    'avatar' => $googleUser['picture'] ?? null,
-                    'password' => null,
-                ]);
-                $this->createDefaultGameSave($user); // ฟังก์ชันเดิมของคุณ
-            } else {
-                $user->google_id = $googleUser['sub'];
-                $user->save();
+                // ยังไม่เคย Login ด้วย Google นี้ → ค้นหาด้วย Email
+                $user = User::where('email', $googleUser['email'])->first();
+
+                if ($user) {
+                    // พบ User ที่ใช้อีเมลนี้อยู่แล้ว
+                    if ($user->google_id) {
+                        // ⚠️ อีเมลนี้ถูก Google บัญชีอื่นยึดไว้แล้ว → ป้องกันการแย่งบัญชี
+                        \Log::warning('Google login blocked: email already linked to another google account', [
+                            'email' => $googleUser['email'],
+                            'existing_google_id' => $user->google_id,
+                            'incoming_google_id' => $googleUser['sub'],
+                        ]);
+                        return redirect("mygame://auth?error=email_already_linked");
+                    }
+
+                    // ✅ User สมัครด้วย Email/Password มาก่อน → แค่ลิ้งค์ Google ID
+                    $user->google_id = $googleUser['sub'];
+                    $user->avatar = $googleUser['picture'] ?? null;
+                    $user->save();
+
+                    // ถ้ายังไม่มี GameSave (เช่น สมัครด้วย email/password) → สร้างให้
+                    $existingSave = \App\Models\GameSave::where('user_id', $user->id)->first();
+                    if (!$existingSave) {
+                        $this->createDefaultGameSave($user);
+                    }
+                } else {
+                    // 👤 User ใหม่ → สร้างและให้ coins/gems
+                    $user = User::create([
+                        'name' => $googleUser['name'] ?? 'Player',
+                        'email' => $googleUser['email'],
+                        'google_id' => $googleUser['sub'],
+                        'avatar' => $googleUser['picture'] ?? null,
+                        'password' => null,
+                    ]);
+                    $this->createDefaultGameSave($user);
+                }
             }
 
             // ออก Token ใหม่
             $user->tokens()->delete();
             $token = $user->createToken('unity-game', ['*'], now()->addDays(30))->plainTextToken;
 
-            // 🚀 ท่าไม้ตาย: ส่งกลับเข้าเกมผ่าน Deep Link
+            // 🚀 ส่งกลับเข้าเกมผ่าน Deep Link
             return redirect("mygame://auth?token=" . $token);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Login failed: ' . $e->getMessage()], 500);
+            \Log::error('Google callback error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect("mygame://auth?error=server_error");
         }
     }
 
@@ -150,17 +252,37 @@ class GoogleAuthController extends Controller
             $user = User::where('google_id', $googleId)->first();
 
             if (!$user) {
+                // ยังไม่เคย Login ด้วย Google นี้ → ค้นหาด้วย Email
                 $user = User::where('email', $email)->first();
 
                 if ($user) {
-                    // Link Google กับ User เดิม
+                    // พบ User ที่ใช้อีเมลนี้อยู่แล้ว
+                    if ($user->google_id) {
+                        // ⚠️ อีเมลนี้ถูก Google บัญชีอื่นยึดไว้แล้ว → ป้องกันการแย่งบัญชี
+                        \Log::warning('Google sign-in blocked: email already linked to another google account', [
+                            'email' => $email,
+                            'existing_google_id' => $user->google_id,
+                            'incoming_google_id' => $googleId,
+                        ]);
+                        return response()->json([
+                            'message' => 'This email is already linked to another Google account'
+                        ], 409);
+                    }
+
+                    // ✅ User สมัครด้วย Email/Password มาก่อน → แค่ลิ้งค์ Google ID
                     $user->google_id = $googleId;
                     $user->avatar = $avatar;
                     $user->save();
 
+                    // ถ้ายังไม่มี GameSave → สร้างให้ (เช่น สมัครด้วย email/password)
+                    $existingSave = \App\Models\GameSave::where('user_id', $user->id)->first();
+                    if (!$existingSave) {
+                        $this->createDefaultGameSave($user);
+                    }
+
                     \Log::info('Linked Google to existing user', ['user_id' => $user->id]);
                 } else {
-                    // สร้าง User ใหม่
+                    // 👤 User ใหม่ → สร้างและให้ coins/gems
                     $user = User::create([
                         'name' => $name,
                         'email' => $email,
@@ -349,38 +471,10 @@ class GoogleAuthController extends Controller
     }
 
     /**
-     * Create default game save for new user
+     * Create default game save for new user (ใช้ Single Source of Truth จาก GameSave model)
      */
     private function createDefaultGameSave(User $user): void
     {
-        $defaultSaveData = [
-            'allPresets' => [],
-            'progressData' => ['progressEntries' => []],
-            'playerData' => [
-                'playerName' => 'นักผจญภัย',
-                'coins' => 5000,
-                'gems' => 100,
-                'playerRank' => 1,
-                'currentExp' => 0,
-                'expToNextRank' => 100,
-                'maxTeamCost' => 50,
-                'currentEnergy' => 240,
-                'lastEnergyUpdateTime' => now()->timestamp,
-                'gachaPityCounters' => new \stdClass(),
-                'usedRedeemCodes' => [],
-                'dailyShopPurchases' => new \stdClass(),
-                'lastShopResetDate' => now()->format('Y-m-d'),
-                'ownedCharacters' => new \stdClass(),
-                'ownedMaterials' => new \stdClass(),
-                'encounteredCharacterIds' => [],
-            ],
-            'questData' => ['questProgress' => new \stdClass()]
-        ];
-
-        GameSave::create([
-            'user_id' => $user->id,
-            'data' => json_encode($defaultSaveData, JSON_UNESCAPED_UNICODE),
-            'pity_count' => 0
-        ]);
+        GameSave::createDefaultForUser($user);
     }
 }

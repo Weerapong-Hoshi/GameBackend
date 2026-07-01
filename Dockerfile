@@ -56,6 +56,6 @@ CMD sh -c "\
     php artisan cache:clear && \
     php artisan view:clear && \
     php artisan route:clear && \
-    php artisan migrate:fresh --force && \
+    php artisan migrate --force && \
     php artisan db:seed --force && \
     exec php -S 0.0.0.0:\$PORT -t public"
