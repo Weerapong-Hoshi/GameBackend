@@ -1,563 +1,86 @@
 {
-    "exportDate": "2026-03-11 01:07:59",
-    "totalCharacters": 62,
+    "exportDate": "2026-06-25 17:34:27",
+    "totalCharacters": 9,
     "characters": [
         {
             "id": 101,
-            "characterName": "บะซอลต์คุง",
+            "characterName": "ควายธนู",
             "rarity": "N",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 101,
+            "poolType": "Featured",
+            "rateMultiplier": 1.0,
+            "fallbackMaterialId": 0,
             "fallbackAmount": 1
         },
         {
             "id": 102,
-            "characterName": "ผีไหแตก",
+            "characterName": "ผีจะกละ",
             "rarity": "N",
             "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 102,
+            "rateMultiplier": 1.0,
+            "fallbackMaterialId": 0,
             "fallbackAmount": 1
         },
         {
             "id": 103,
-            "characterName": "น้องเขียดวิดน้ำ",
+            "characterName": "ผีกระหัง",
             "rarity": "N",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 103,
+            "poolType": "Featured",
+            "rateMultiplier": 1.0,
+            "fallbackMaterialId": 0,
             "fallbackAmount": 1
         },
         {
             "id": 104,
-            "characterName": "กองกอย",
+            "characterName": "ผีกระสือ",
             "rarity": "N",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 104,
+            "poolType": "Featured",
+            "rateMultiplier": 1.0,
+            "fallbackMaterialId": 0,
             "fallbackAmount": 1
         },
         {
             "id": 105,
-            "characterName": "ลิตเติ้ลสโคเรีย",
+            "characterName": "ผีปะคำ",
             "rarity": "N",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 105,
+            "poolType": "Featured",
+            "rateMultiplier": 1.0,
+            "fallbackMaterialId": 0,
             "fallbackAmount": 1
         },
         {
             "id": 106,
-            "characterName": "บั้งไฟน้อย",
+            "characterName": "ผีปอป",
             "rarity": "N",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 106,
+            "poolType": "Featured",
+            "rateMultiplier": 1.0,
+            "fallbackMaterialId": 0,
             "fallbackAmount": 1
         },
         {
             "id": 107,
-            "characterName": "หินกลิ้งน้ำมูล",
+            "characterName": "ผีพราย",
             "rarity": "N",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 107,
+            "poolType": "Featured",
+            "rateMultiplier": 1.0,
+            "fallbackMaterialId": 0,
             "fallbackAmount": 1
         },
         {
             "id": 108,
-            "characterName": "ภูตดินแดง",
+            "characterName": "ผีเปรต",
             "rarity": "N",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 108,
+            "poolType": "Featured",
+            "rateMultiplier": 1.0,
+            "fallbackMaterialId": 0,
             "fallbackAmount": 1
         },
         {
             "id": 109,
-            "characterName": "เศษศิลาทราย",
+            "characterName": "ผีโพรง",
             "rarity": "N",
-            "poolType": "Standard",
+            "poolType": "Featured",
             "rateMultiplier": 1.0,
-            "fallbackMaterialId": 109,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 110,
-            "characterName": "กระสวยซิ่ง",
-            "rarity": "N",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 110,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 201,
-            "characterName": "ช่างตีเหล็กบ้านดงพลอง",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 201,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 202,
-            "characterName": "กิ้งก่ายักษ์โบราณ",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 202,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 203,
-            "characterName": "ใบตอง",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 203,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 204,
-            "characterName": "วิญญาณควาญช้างเก่า",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 204,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 205,
-            "characterName": "งูจงอางยักษ์",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 205,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 206,
-            "characterName": "เทพธิดาดอกบัว",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 206,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 207,
-            "characterName": "ผีปอบ",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 207,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 208,
-            "characterName": "รังไหม",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 208,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 209,
-            "characterName": "นกนางแอ่นเวหา",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 209,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 210,
-            "characterName": "ลิงแสมเจ้าถิ่น",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 210,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 211,
-            "characterName": "ช่างปั้นดินเผา",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 211,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 212,
-            "characterName": "กงล้อเกวียนสังหาร",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 212,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 213,
-            "characterName": "ศิลาจารึกเดินได้",
-            "rarity": "R",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 213,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 301,
-            "characterName": "มังกรเขียวไข่กา",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 301,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 302,
-            "characterName": "เทพธิดาข้าวหอม",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 302,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 303,
-            "characterName": "โกเลมเตาเผา",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 303,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 304,
-            "characterName": "พญาครุฑน้อย",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 304,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 305,
-            "characterName": "หมอช้างจิ๋ว",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 305,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 306,
-            "characterName": "เทพารักษ์น้อย",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 306,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 307,
-            "characterName": "เมยหลิง",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 307,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 308,
-            "characterName": "น้องเรือยาว",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 308,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 309,
-            "characterName": "ท้าวเวสสุวรรณจิ๋ว",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 309,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 310,
-            "characterName": "น้องบัวแดง",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 310,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 311,
-            "characterName": "รินเน่",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 311,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 312,
-            "characterName": "น้องไหมทอง",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 312,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 313,
-            "characterName": "พราหมณ์น้อย",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 313,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 314,
-            "characterName": "พรายน้ำยาง",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 1.0,
-            "fallbackMaterialId": 314,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 315,
-            "characterName": "หมอลำสาวเสียงแคน",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 1.0,
-            "fallbackMaterialId": 315,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 316,
-            "characterName": "เทพธิดาตะเพียนสาน",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 1.0,
-            "fallbackMaterialId": 316,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 317,
-            "characterName": "น้องกระติ๊บจอมจุ",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 1.0,
-            "fallbackMaterialId": 317,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 318,
-            "characterName": "ภูตทุเรียนภูเขาไฟ",
-            "rarity": "SR",
-            "poolType": "Standard",
-            "rateMultiplier": 1.0,
-            "fallbackMaterialId": 318,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 401,
-            "characterName": "เบนซ์",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 401,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 402,
-            "characterName": "แจ็ค",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 402,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 403,
-            "characterName": "ลิลลี่",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 403,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 404,
-            "characterName": "สมศักดิ์",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 404,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 405,
-            "characterName": "ช่างเครื่องเคลือบพันปี",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 405,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 406,
-            "characterName": "นางไหจอมลีลา",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 406,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 407,
-            "characterName": "ราชินีฝ้ายย้อมดิน",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 407,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 408,
-            "characterName": "ราชินีไหมซิ่นตีนแดง",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 408,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 409,
-            "characterName": "นางอรพิม",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 409,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 410,
-            "characterName": "เทวีสงกรานต์",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 410,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 411,
-            "characterName": "พ่อค้ำวัวงำมนำยฮ้อย",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 411,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 412,
-            "characterName": "จักรกลรถอีแต๋น",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 412,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 413,
-            "characterName": "ปรมาจารย์โปงลาง",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 413,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 414,
-            "characterName": "ท้าวปาจิต",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 414,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 415,
-            "characterName": "นักดาราศาสตร์ราชสำนัก",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 415,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 416,
-            "characterName": "วิศวกรปราสาทหิน",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 416,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 417,
-            "characterName": "นางอัปสราศิลา",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 417,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 418,
-            "characterName": "ราชินีทอเสื่อ",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 418,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 419,
-            "characterName": "อัศวินปราสาทสายฟ้า",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 419,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 420,
-            "characterName": "พญาคันคาก",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 420,
-            "fallbackAmount": 1
-        },
-        {
-            "id": 421,
-            "characterName": "จ้าวอสุราภูเขาไฟ",
-            "rarity": "SSR",
-            "poolType": "Featured",
-            "rateMultiplier": 2.0,
-            "fallbackMaterialId": 421,
+            "fallbackMaterialId": 0,
             "fallbackAmount": 1
         }
     ]

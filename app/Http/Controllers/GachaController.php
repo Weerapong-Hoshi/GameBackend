@@ -9,10 +9,6 @@ use App\Models\Character;
 class GachaController extends Controller
 {
     // Config Rates
-    const RATE_SSR = 3;
-    const RATE_SR = 12;
-    const RATE_R = 35;
-    const RATE_N = 50;
     const GEM_COST = 10;
     const PITY_COUNT = 40;
 
@@ -28,7 +24,6 @@ class GachaController extends Controller
         $targetId = (int) $request->input('target_character_id');
 
         // 1. Load Data
-        // ✅ ใช้ ->data ตาม Database จริง
         $gameSave = GameSave::firstOrCreate(['user_id' => $user->id]);
         $saveData = json_decode($gameSave->data, true);
 
@@ -43,18 +38,18 @@ class GachaController extends Controller
             return response()->json(['success' => false, 'message' => 'Not enough gems'], 400);
         }
 
-        // 2. Prepare Pools
-        $nPool = Character::where('pool_type', 'Standard')->where('rarity', 'N')->get();
-        $rPool = Character::where('pool_type', 'Standard')->where('rarity', 'R')->get();
-        $srPool = Character::where('pool_type', 'Standard')->where('rarity', 'SR')->get();
-
+        // ตรวจสอบว่ามีตัวละครเป้าหมาย (Featured) ที่เลือกจาก Unity จริงไหม
         $targetChar = Character::where('id', $targetId)->first();
-        if (!$targetChar || $targetChar->pool_type !== 'Featured') {
+        if (!$targetChar) {
             return response()->json(['success' => false, 'message' => 'Invalid Target'], 400);
         }
 
-        $standardSsrPool = Character::where('pool_type', 'Standard')->where('rarity', 'SSR')->get();
-        $fullSsrPool = $standardSsrPool->push($targetChar);
+        // 2. Prepare Pools (ดึงตัวละครทั้งหมดใน Database มารวมกันเพื่อป้องกัน Pool ว่างแล้วล่ม)
+        $basePool = Character::all();
+
+        if ($basePool->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'No characters available in database'], 500);
+        }
 
         $pullResults = [];
         $currentPity = $gameSave->pity_count;
@@ -63,37 +58,33 @@ class GachaController extends Controller
         for ($i = 0; $i < $amount; $i++) {
             $currentPity++;
             $obtainedChar = null;
-            $rarityRoll = null;
 
+            // ระบบการันตี Pity (เมื่อกดครบตามกำหนด ให้ได้ตัวเลือกจาก Unity ทันที)
             if ($currentPity >= self::PITY_COUNT) {
                 $obtainedChar = $targetChar;
-                $rarityRoll = 'SSR';
                 $currentPity = 0;
             } else {
-                $rand = rand(1, 100);
+                // คลอนข้อมูล Pool ทั้งหมดมาทำกล่องสุ่มชั่วคราว
+                $tempPool = clone $basePool;
 
-                if ($rand <= self::RATE_SSR) {
-                    $rarityRoll = 'SSR';
-                    $obtainedChar = $fullSsrPool->random();
-                    if ($obtainedChar->id === $targetChar->id) {
-                        $currentPity = 0;
-                    }
-                } elseif ($rand <= self::RATE_SSR + self::RATE_SR) {
-                    $rarityRoll = 'SR';
-                    $obtainedChar = $srPool->random();
-                } elseif ($rand <= self::RATE_SSR + self::RATE_SR + self::RATE_R) {
-                    $rarityRoll = 'R';
-                    $obtainedChar = $rPool->random();
-                } else {
-                    $rarityRoll = 'N';
-                    $obtainedChar = $nPool->random();
+                // 🌟 [RATE UP LOGIC] ยัดตัวละครที่เลือกเพิ่มเข้าไปในกล่องสุ่ม 5 สิทธิ์เพื่อเพิ่มโอกาสออก (ปรับเพิ่ม/ลดได้ตามใจชอบ)
+                for ($j = 0; $j < 5; $j++) {
+                    $tempPool->push($targetChar);
+                }
+
+                // สุ่มหยิบจากกล่องรวม (ได้ตัวไหนก็ได้ตัวนั้น ไม่มีทาง Error 0 items)
+                $obtainedChar = $tempPool->random();
+
+                // ถ้าสุ่มได้ตัวหน้าตู้พอดี ให้รีเซ็ตค่า Pity คืนเป็น 0
+                if ($obtainedChar->id === $targetChar->id) {
+                    $currentPity = 0;
                 }
             }
 
-            if (!$obtainedChar)
-                $obtainedChar = $targetChar;
+            // ใช้ Rarity จริงของตัวละครตัวนั้นไปแสดงผล
+            $rarityRoll = $obtainedChar->rarity;
 
-            // Process Ownership
+            // Process Ownership (ระบบบันทึกข้อมูลตัวละครของเดิม)
             $ownedChars = $saveData['playerData']['ownedCharacters'] ?? [];
             $isNew = !array_key_exists($obtainedChar->id, $ownedChars);
 
@@ -123,7 +114,7 @@ class GachaController extends Controller
             $pullResults[] = [
                 'id' => $obtainedChar->id,
                 'isCharacter' => true,
-                'rarity' => $rarityRoll ?? $obtainedChar->rarity,
+                'rarity' => $rarityRoll,
                 'is_new' => $isNew,
                 'fallback_id' => $obtainedChar->fallback_material_id,
                 'fallback_amount' => $obtainedChar->fallback_amount

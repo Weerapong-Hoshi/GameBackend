@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GameDataController;
 use App\Http\Controllers\GachaController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\GuestController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
@@ -40,8 +41,14 @@ Route::middleware('throttle:password-reset')->group(function () {
     Route::post('/password/reset', [AuthController::class, 'resetPassword']);
 });
 
+// Guest Play (ไม่ต้อง Login)
+Route::post('/guest', [GuestController::class, 'store']);
+
 // Protected Routes (ต้องมี Token)
 Route::middleware('auth:sanctum')->group(function () {
+    // Guest Account Linking
+    Route::post('/guest/link', [GuestController::class, 'link']);
+
     Route::get('/user', [AuthController::class, 'user']); // Validate Token
     
     // Google Account Management
