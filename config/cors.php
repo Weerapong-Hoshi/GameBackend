@@ -19,7 +19,8 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:8000', 'http://127.0.0.1:8000', 'https://gamebackend-184d.onrender.com'],
+    'allowed_origins' => ['http://localhost:8000', 'http://127.0.0.1:8000', 'https://gamebackend-184d.onrender.com',
+    'https://itch.io', 'https://*.itch.zone'],
 
     'allowed_origins_patterns' => [],
 
